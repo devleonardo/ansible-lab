@@ -1,0 +1,28 @@
+- hosts: pmx-plz-06
+  remote_user: ansible
+  become: true
+  gather_facts: false
+  vars:
+    vm_ip: 192.168.0.0/24
+    vm_gw: 192.168.0.0
+    vm_dns: 192.168.0.0
+    vm_tag: 42
+    vm_id: 600
+
+  # tasks:
+  # - name: Change IP through nmcli
+  #   shell: |
+  #     nmcli con modify eth0 ipv4.address "{{ vm_ip }}"
+  #     nmcli con modify eth0 ipv4.gateway "{{ vm_gw }}"
+  #     nmcli con modify eth0 ipv4.dns "{{ vm_dns }}"
+  #     nmcli con modify eth0 ipv4.method manual
+  #     nmcli con up eth0
+  #     exit && exit
+
+  # hosts: pmx-plz-06
+  tasks:
+  - name: Configure network through ProxMox CLI
+    shell: |
+      qm set "{{ vm_id }}" -net0 virtio,bridge=vmbr1,tag={{ vm_tag }}
+      qm set "{{ vm_id }}" --ipconfig0 ip={{ vm_ip }},gw={{ vm_gw }} 
+

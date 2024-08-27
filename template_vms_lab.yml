@@ -1,0 +1,62 @@
+- hosts: 192.168.0.0
+  become: true
+  gather_facts: false
+  tasks:
+
+  - name: Criar VMs no Proxmox
+    community.general.proxmox_kvm:
+    vars:
+
+      proxmox_params:
+        api_host: "192.168.0.0"
+        api_user: "ansible@pam"
+        api_token_id: "ansiblelab"
+        api_token_secret: "a0514883-df47-4ca3-a880-1ba47ef01a59"
+        node: "pmx-plz-06"
+        storage: "SSD-LOCAL-PMX-PLZ-06"
+      vm_templates:
+        - { name: "alci94-padrao", vmid: 9003, os: "almalinux" }
+        - { name: "alci94-padrao", vmid: 9003, os: "almalinux" }
+        - { name: "alci94-padrao", vmid: 9003, os: "almalinux" }
+      new_vms:
+        - { name: "devnexus02", vmid: 5001, template: "alci94-padrao", ip: "10.1.254.142" }
+        - { name: "devnexus03", vmid: 5002, template: "alci94-padrao", ip: "10.1.254.143" }
+        - { name: "devnexus04", vmid: 5003, template: "alci94-padrao", ip: "10.1.254.144" }
+        
+    tasks:
+      - name: Criar nova VM a partir do template
+        community.general.proxmox_kvm:
+          api_host: "{{ proxmox_params.api_host }}"
+          api_user: "{{ proxmox_params.api_user }}"
+          api_token_id: "{{ proxmox_params.api_token_id }}"
+          api_token_secret: "{{ proxmox_params.api_token_secret }}"
+          node: "{{ proxmox_params.node }}"
+          newid: "{{ item.vmid }}"
+          clone: "{{ item.template }}"
+          name: "{{ item.name }}"
+          storage: "{{ proxmox_params.storage }}"
+          state: present
+        loop: "{{ new_vms }}"
+    
+      - name: Configurar rede das VMs
+        shell: |
+          qm set "{{ item.vmid }}" -net0 virtio,bridge=vmbr1,tag=43
+          qm set "{{ item.vmid }}" --ipconfig0 ip="{{ item.ip }}"
+        loop: "{{ new_vms }}"
+
+      - name: Configurar recursos das VMs
+        shell: |
+          qm set "{{ item.vmid }}" --cores 4
+          qm set "{{ item.vmid }}" --memory 4096
+        loop: "{{ new_vms }}"
+
+      - name: Iniciar a VM
+        community.general.proxmox_kvm:
+          api_host: "{{ proxmox_params.api_host }}"
+          api_user: "{{ proxmox_params.api_user }}"
+          api_token_id: "{{ variavel }}"
+          api_token_secret: "{{ variavel }}"
+          node: "{{ proxmox_params.node }}"
+          vmid: "{{ item.vmid }}"
+          state: started
+        loop: "{{ new_vms }}"

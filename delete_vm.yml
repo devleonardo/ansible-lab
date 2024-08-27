@@ -1,0 +1,9 @@
+- hosts: 192.168.0.0
+  remote_user: ansible
+  become: true
+  gather_facts: false
+  tasks:
+
+  - name: Stop and delete VM through ProxMox CLI
+    shell: |
+      qm stop 888 && qm destroy 888

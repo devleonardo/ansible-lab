@@ -1,0 +1,10 @@
+- hosts: 192.168.0.0
+  become: true
+  gather_facts: true
+  tasks:
+
+  - name: Add martins-nuc ssh key
+    authorized_key:
+      user: usshd
+      key: "public key"
+

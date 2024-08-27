@@ -1,0 +1,179 @@
+- hosts: 192.168.0.0
+  remote_user: ansible
+  become: true
+  gather_facts: false
+  tasks:
+
+  - name: Export environment variable to /etc/environment to make it permanent
+    lineinfile: 
+      path: /etc/environment
+      line: 'PATH="/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"'
+
+  - name: Set timezone to America/Sao_Paulo
+    community.general.timezone:
+      name: America/Sao_Paulo
+
+  - name: Update all packages
+    dnf:
+      name: '*'
+      state: latest
+    register: update_result
+
+  - name: Upgrade all packages
+    dnf:
+      name: '*'
+      state: latest
+      update_cache: yes
+    when: update_result is changed
+    register: upgrade_result
+
+  - name: Create usshd user
+    user:
+      name: usshd
+      shell: '/bin/bash'
+
+  - name: Add usshd to sudoers
+    copy:
+      content: |
+        usshd ALL=(ALL) NOPASSWD:ALL
+      dest: /etc/sudoers.d/usshd
+      owner: root
+      group: root
+      mode: 0440
+
+  - name: Install some useful packages
+    dnf:
+      name:
+        - make
+        - git
+        - vim
+        - nano
+        - pip
+        - nodejs
+        - npm
+        - wget
+      state: present
+
+  - name: Ensure pip is installed
+    dnf:
+      name: python3-pip
+      state: present
+
+  - name: Ensure nodejs is installed
+    dnf:
+      name: nodejs
+      state: present
+
+  - name: Ensure npm is installed
+    dnf:
+      name: npm
+      state: present
+
+  - name: Install some dependencies with pip
+    pip:
+      name:
+        - Flask
+        - wheel
+        - ldap3
+        - Flask-Session
+        - ping3
+        - dnspython
+        - pytz
+        - selenium
+        - mysql-connector
+        - pillow
+        - pywinrm
+        - pyzabbix
+        - openpyxl
+      state: present
+    
+  - name: Create file package.json
+    copy:
+      dest: /home/usshd/package.json
+      content: |
+        {
+          "name": "trello-clone",
+          "version": "0.1.0",
+          "private": true,
+          "dependencies": {
+            "@emotion/react": "^11.10.4",
+            "@emotion/styled": "^11.10.4",
+            "@mui/icons-material": "^5.10.9",
+            "@mui/material": "^5.10.9",
+            "@testing-library/jest-dom": "^5.16.4",
+            "@testing-library/react": "^13.0.1",
+            "@testing-library/user-event": "^13.5.0",
+            "axios": "^1.7.2",
+            "buffer": "^6.0.3",
+            "highlight.js": "^11.10.0",
+            "html-react-parser": "^5.1.10",
+            "html-to-text": "^9.0.5",
+            "react": "^17.0.2",
+            "react-beautiful-dnd": "^13.1.0",
+            "react-dom": "^17.0.2",
+            "react-html-parser": "^2.0.2",
+            "react-icons": "^5.2.1",
+            "react-modal": "^3.16.1",
+            "react-quill": "^2.0.0",
+            "react-responsive": "^10.0.0",
+            "react-router-dom": "^6.24.0",
+            "react-scripts": "5.0.1",
+            "styled-components": "^6.1.11",
+            "web-vitals": "^2.1.4"
+          },
+          "scripts": {
+            "start": "react-scripts start",
+            "build": "react-scripts build",
+            "test": "react-scripts test",
+            "eject": "react-scripts eject"
+          },
+          "eslintConfig": {
+            "extends": [
+              "react-app",
+              "react-app/jest"
+            ]
+          },
+          "browserslist": {
+            "production": [
+              ">0.2%",
+              "not dead",
+              "not op_mini all"
+            ],
+            "development": [
+              "last 1 chrome version",
+              "last 1 firefox version",
+              "last 1 safari version"
+            ]
+          }
+        }
+    become: yes
+
+  # - name: Install node.js dependencies
+  #   npm:
+  #     path: /home/usshd
+  #     state: present
+  #   become: yes
+
+  - name: Install node.js dependencies w/ --legacy-peer-deps option
+    command: npm install --legacy-peer-deps
+    args:
+      chdir: /home/usshd
+    become: yes
+
+  - name: Add barchilon-nuc ssh key
+    authorized_key:
+      user: usshd
+      key: "public key"
+
+  - name: Add martins-nuc ssh key
+    authorized_key:
+      user: usshd
+      key: "public key"
+
+  - name: Add maria-notebook ssh key
+    authorized_key:
+      user: usshd
+      key: "public key"
+
+  
+

@@ -1,0 +1,28 @@
+---
+
+- name: Run ssh -V command
+  shell: sh -c 'ssh -V 2> ler_versao' && cat ler_versao | awk -F '_' '{ print $2 }' | awk -F 'p' '{ print $1 }' && rm -f ler_versao
+  register: openssh_version
+  changed_when: false
+
+- name: Debug OpenSSH version
+  debug:
+    var: openssh_version.stdout
+
+- name: Modificar LoginGraceTime no sshd_config
+  become: yes
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^LoginGraceTime\s+\S+'
+    line: 'LoginGraceTime 0'
+  notify: restart sshd
+  when: >
+    openssh_version.stdout is defined and
+    (openssh_version.stdout.split('.')[0] | int == 8 and openssh_version.stdout.split('.')[1] | int >= 5) or
+    (openssh_version.stdout.split('.')[0] | int == 9 and openssh_version.stdout.split('.')[1] | int <= 8)
+
+- name: Reiniciar serviço SSH se necessário
+  become: yes
+  command: service sshd onerestart
+  notify: restart sshd
+

@@ -1,0 +1,64 @@
+- hosts: 192.168.0.0
+  become: false
+  gather_facts: false
+  vars:
+    proxmox_params:
+      api_host: 192.168.0.0
+      api_user: ansible@pam
+      api_token_id: ansiblelab
+      api_token_secret: a0514883-df47-4ca3-a880-1ba47ef01a59
+      node: pmx-plz-06
+      storage: SSD-LOCAL-PMX-PLZ-06
+    
+#    vm_templates:
+#      - { name: "debian12-cloudinit", vmid: 99901, os: "debian" }
+
+    vm_templates:
+      debian12-cloudinit: 99901
+    
+    new_vms:
+      - { name: "vm_debian", vmid: 5001, template: "debian12-cloudinit" }
+
+    vm_details: 
+      name: "vm_debian"
+      ip: "192.168.0.0"
+      netmask: "24"
+      gateway: "192.168.0.0"
+  
+  tasks:
+    - name: Criacao das VMs
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_params.api_host }}"
+        api_user: "{{ proxmox_params.api_user }}"
+        api_token_id: "{{ proxmox_params.api_token_id }}"
+        api_token_secret: "{{ proxmox_params.api_token_secret }}"
+        node: "{{ proxmox_params.node }}"
+        newid: "{{ item.vmid }}"
+        #clone: "{{ vm_templates[item.template] }}"
+        clone: "debian12-cloudinit"
+        full: false
+        #name: "{{ item.name }}"
+        name: vm_teste_teste
+        storage: "{{ proxmox_params.storage }}"
+        cores: 2
+        memory: 2048
+        #net: "virtio,bridge=vmbr1"
+        #ipconfig0: "ip={{ vm_details.ip }}/{{ vm_details.netmask }},gw={{ vm_details.gateway }}"
+#        net: virtio,bridge=vmbr1
+#        ipconfig0: "ip={{ vm_details.ip }}"
+#        net:
+#          - model: virtio
+#            bridge: vmbr1
+#            ip: "192.168.0.0/24"
+        state: present
+      loop: "{{ new_vms }}"
+    
+    - name: Iniciar a VM
+      community.general.proxmox:
+        api_host: "{{ proxmox_params.api_host }}"
+        api_user: "{{ proxmox_params.api_user }}"
+        api_token_id: "{{ proxmoxparams.api_token_id }}"
+        api_token_secret: "{{ proxmox_params.api_token_secret }}"
+        node: "{{ proxmox_params.node }}"
+        vmid: "{{  item.vmid }}"
+        state: started

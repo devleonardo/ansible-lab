@@ -1,0 +1,28 @@
+- hosts: devnexus
+  become: true
+  gather_facts: true
+
+  tasks:
+
+  - name: Clone Git Flow repository on /home/usshd/ and enter on directory
+    shell: |
+      cd /home/usshd/
+      git clone https://github.com/nvie/gitflow.git
+      cd /home/usshd/gitflow/
+    
+  - name: Modify .gitmodules archive to change git to https on the url
+    replace:
+      path: /home/usshd/gitflow/.gitmodules
+      regexp: '^\turl = git://github.com/nvie/shFlags.git$'
+      replace: '\turl = https://github.com/nvie/shFlags.git'
+
+  - name: Git submodule commands to init and update
+    shell: |
+      cd /home/usshd/gitflow/
+      git submodule init
+      git submodule update
+
+  - name: Execute make install
+    shell: |
+      cd /home/usshd/gitflow/
+      make install

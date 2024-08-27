@@ -1,0 +1,42 @@
+- name: Verificar OS
+  hosts: public-servers-cve-2024-6387
+  vars_files:
+    - /root/secrets.yml
+  gather_facts: yes
+  become: yes
+  become_method: sudo
+
+  tasks:
+    - name: Filtra o OS
+      ansible.builtin.setup:
+        filter: "ansible_distribution"
+      
+    - name: Retorna o OS
+      ansible.builtin.debug:
+        var: ansible_distribution
+
+    - name: Define ansible_ssh_pass para hosts linux
+      set_fact:
+        ansible_ssh_pass: "{{ ansible_ssh_pass }}"
+        ansible_become_pass: "{{ ansible_become_pass }}"
+      when: ansible_distribution != 'FreeBSD'
+    
+    - name: Define ansible_become_pass para hosts freebsd
+      set_fact:
+        ansible_ssh_pass: "{{ ansible_ssh_pass }}"
+        ansible_become_pass: "{{ ansible_become_pass }}"
+      when: ansible_distribution == 'FreeBSD'
+
+    - name: linux
+      include_tasks: linux_seek_and_destroy.yml
+      when: ansible_distribution != 'FreeBSD'
+
+    - name: freebsd
+      include_tasks: unix_seek_and_destroy.yml
+      when: ansible_distribution == 'FreeBSD'
+
+  handlers:
+  - name: restart sshd
+    service:
+      name: sshd
+      state: restarted

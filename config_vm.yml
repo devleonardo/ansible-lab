@@ -1,0 +1,94 @@
+- hosts: 192.168.0.0
+  remote_user: ansible
+  become: true
+  gather_facts: false
+  tasks:
+
+  - name: Export environment variable to /etc/environment to make it permanent
+    lineinfile: 
+      path: /etc/environment
+      line: 'PATH="/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"'
+
+  - name: Set timezone to America/Sao_Paulo
+    community.general.timezone:
+      name: America/Sao_Paulo
+
+  - name: Update all packages
+    dnf:
+      name: '*'
+      state: latest
+    register: update_result
+
+  - name: Upgrade all packages
+    dnf:
+      name: '*'
+      state: latest
+      update_cache: yes
+    when: update_result is changed
+    register: upgrade_result
+
+  - name: Install some useful packages
+    dnf:
+      name:
+        - make
+        - git
+        - vim
+        - nano
+        - pip
+        - wget
+      state: present
+
+  - name: Ensure pip is installed
+    dnf:
+      name: python3-pip
+      state: present
+
+  - name: Install some dependencies with pip
+    pip:
+      name:
+        - Flask
+        - wheel
+        - ldap3
+        - Flask-Session
+        - ping3
+        - dnspython
+        - pytz
+        - selenium
+        - mysql-connector
+        - pillow
+        - pywinrm
+        - pyzabbix
+        - openpyxl
+      state: present
+
+  - name: Create usshd user
+    user:
+      name: usshd
+      shell: '/bin/bash'
+
+  - name: Add usshd to sudoers
+    copy:
+      content: |
+        usshd ALL=(ALL) NOPASSWD:ALL
+      dest: /etc/sudoers.d/usshd
+      owner: root
+      group: root
+      mode: 0440
+
+  - name: Add barchilon-nuc ssh key
+    authorized_key:
+      user: usshd
+      key: "public key"
+
+  - name: Add martins-nuc ssh key
+    authorized_key:
+      user: usshd
+      key: "public key"
+
+  - name: Add maria-notebook ssh key
+    authorized_key:
+      user: usshd
+      key: "public key"
+
+  
+

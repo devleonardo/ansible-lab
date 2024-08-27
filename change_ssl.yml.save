@@ -1,0 +1,61 @@
+---
+- name: Localizar e substituir arquivo no servidor
+  hosts: ssl
+  vars_files:
+    - /root/secrets.yml
+  gather_facts: yes
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: Encontrar o arquivo lestetelecom.com.br.crt
+      find:
+        paths: /etc
+        patterns:
+          - "lestetelecom.com.br.crt"
+        recurse: yes  # Inclui subpastas na busca
+      register: arquivos_encontrados
+
+    - name: Exibir arquivos encontrados
+      debug:
+        msg: "{{ arquivos_encontrados.files }}"
+
+    - name: Substituir o arquivo lestetelecom.com.br.crt
+      copy:
+        src: /root/chave_ssl/lestetelecom.com.br.crt
+        dest: "{{ item.path }}"
+        backup: yes # Cria um backup do arquivo
+      with_items: "{{ arquivos_encontrados.files }}"
+      when: arquivos_encontrados.matched > 0
+
+    - name: Verificar se o nginx está instalado
+      command: which nginx
+      register: nginx_check
+      ignore_errors: yes
+
+    - name: Reiniciar o serviço nginx se estiver instalado
+      service:
+        name: nginx
+        state: restarted
+      when: nginx_check.rc == 0
+
+    - name: Verificar se o httpd está instalado
+      command: which httpd
+      register: httpd_check
+      ignore_errors: yes
+
+    - name: Reiniciar o serviço httpd se estiver instalado
+      service:
+        name: httpd
+        state: restarted
+      when: httpd_check.rc == 0
+
+    - name: Verificar se o apache2 está instalado
+      command: which apache2
+      register: apache2_check
+      ignore_errors: yes
+
+    - name: Reiniciar o serviço apache2 se estiver instalado
+      service:
+        name: apache2
+        state: restarted
+      when: apache2_check.rc == 0

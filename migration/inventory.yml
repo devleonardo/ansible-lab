@@ -1,0 +1,18 @@
+[pmx-plz-06]
+192.168.0.0
+
+[ansiblelab]
+192.168.0.0
+
+[devnexus]
+192.168.0.0
+
+[homologacao]
+192.168.0.0  ansible_user=atena  ansible_become_method=sudo
+#192.168.0.0 ansible_user=atena  ansible_become_method=sudo
+
+[lab-playbooks]
+192.168.0.0
+
+[public-servers-cve-2024-6387]
+192.168.0.0

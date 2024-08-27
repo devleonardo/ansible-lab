@@ -1,0 +1,52 @@
+- hosts: pmx-plz-06
+  become: true
+  gather_facts: false
+  vars:
+    vm_id: 600
+    vm_ip: 192.168.0.0
+    vm_name: lab-playbooks
+    vm_node: pmx-plz-06
+  
+  tasks:
+  - name: Create a vm
+    community.general.proxmox_kvm:
+     newid: "{{ vm_id }}"
+     node: pmx-plz-06
+     api_user: ansible@pam
+     api_token_id: ansiblelab
+     api_token_secret: a0514883-df47-4ca3-a880-1ba47ef01a59
+     api_host: 192.168.0.0
+     name: "{{ vm_name }}"
+     clone: alci94-padrao
+     storage: SSD-LOCAL-PMX-PLZ-06
+     state: present
+
+  - name: Configure network through ProxMox CLI
+    shell: |
+      qm set "{{ vm_id }}" -net0 virtio,bridge=vmbr1,tag=43
+      qm set "{{ vm_id }}" --ipconfig0 ip={{ vm_ip }}/24,gw=10.1.254.1       
+
+  - name: Configure resources through ProxMox CLI
+    shell: |
+      qm set "{{ vm_id }}" --cores 4
+      qm set "{{ vm_id }}" --memory 4096
+
+  - name: Start a vm
+    community.general.proxmox_kvm:
+      api_host: 192.168.0.0
+      api_user: ansible@pam
+      api_token_id: ansiblelab
+      api_token_secret: a0514883-df47-4ca3-a880-1ba47ef01a59
+      node: pmx-plz-06
+      vmid: "{{ vm_id }}"
+      state: started
+
+- hosts: localhost
+  tasks:
+    - name: 15 seconds delay to VM boot up
+      pause:
+        seconds: 15
+
+    - name: Ensure SSH key is accepted
+      shell: "ssh-keyscan -H 10.1.254.146 >> ~/.ssh/known_hosts"
+

@@ -1,0 +1,72 @@
+- hosts: pmx-plz-06
+  remote_user: ansible
+  become: true
+  gather_facts: false
+  vars:
+    vm_id: 777
+    vm_ip: 192.168.0.0
+    vm_cidr: 24
+    vm_gw: 192.168.0.0
+    vm_tag: 43
+    vm_name: bangladesh
+    vm_node: velocimetro
+    vm_size: 10G
+    vm_storage: SSD-LOCALVMS
+    vm_bridge: vmbr2
+    vm_template: alci94-agoravai
+    api_host: 192.168.0.0
+    api_user: ansible@pam
+    api_token_id: ansibleintegration
+    api_token_secret: afa80a9d-9cef-4772-a3d7-d5217e1f51a4
+  
+  tasks:
+  - name: Create VM
+    community.general.proxmox_kvm:
+     newid: "{{ vm_id }}"
+     node: "{{ vm_node }}"
+     api_user: "{{ api_user }}"
+     api_token_id: "{{ api_token_id }}"
+     api_token_secret: "{{ api_token_secret }}"
+     api_host: "{{ api_host }}"
+     name: "{{ vm_name }}"
+     clone: "{{ vm_template }}"
+     storage: "{{ vm_storage }}"
+     state: present
+
+  - name: 8 seconds delay to VM be created
+    pause:
+      seconds: 8
+
+  - name: Resize VM through ProxMox CLI
+    shell: |
+      qm resize "{{ vm_id }}" scsi0 "{{ vm_size }}"
+
+  - name: Configure network through ProxMox CLI
+    shell: |
+      qm set "{{ vm_id }}" -net0 virtio,bridge={{ vm_bridge }},tag={{ vm_tag }}
+      qm set "{{ vm_id }}" --ipconfig0 ip={{ vm_ip }}/{{ vm_cidr }},gw={{ vm_gw }}      
+
+  - name: Configure resources through ProxMox CLI
+    shell: |
+      qm set "{{ vm_id }}" --cores 4
+      qm set "{{ vm_id }}" --memory 4096
+
+  - name: Start VM
+    community.general.proxmox_kvm:
+      api_host: "{{ api_host }}"
+      api_user: "{{ api_user }}"
+      api_token_id: "{{ api_token_id }}"
+      api_token_secret: "{{ api_token_secret }}"
+      node: "{{ vm_node }}"
+      vmid: "{{ vm_id }}"
+      state: started
+
+- hosts: localhost
+  tasks:
+    - name: 15 seconds delay to VM boot up
+      pause:
+        seconds: 15
+
+    - name: Ensure SSH key is accepted
+      shell: "ssh-keyscan -H 10.1.254.139 >> ~/.ssh/known_hosts"
+
